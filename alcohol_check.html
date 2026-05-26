@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="アルコールチェック">
+<title>(株)ともなり　アルコールチェック記録</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:#f5f5f5;color:#111;font-size:16px}
+.header{background:#1A5EA8;color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header h1{font-size:17px;font-weight:600}
+.conn{font-size:12px;opacity:.85}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e0e0e0;position:sticky;top:52px;z-index:99}
+.tab{flex:1;padding:12px 4px;font-size:13px;text-align:center;border:none;background:none;color:#888;border-bottom:2px solid transparent;cursor:pointer}
+.tab.active{color:#1A5EA8;border-bottom-color:#1A5EA8;font-weight:600}
+.panel{display:none;padding:12px 16px 80px}
+.panel.active{display:block}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.field{margin-bottom:14px}
+label{display:block;font-size:13px;color:#666;margin-bottom:5px;font-weight:500}
+input,select,textarea{width:100%;font-size:16px;padding:11px 13px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#111;-webkit-appearance:none;appearance:none}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#1A5EA8}
+textarea{resize:none;height:60px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:block;width:100%;padding:13px;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;text-align:center}
+.btn-primary{background:#1A5EA8;color:#fff}
+.btn-primary:active{background:#154d8a}
+.btn-secondary{background:#f0f0f0;color:#333}
+.btn-sm{display:inline-block;width:auto;padding:6px 14px;font-size:13px;font-weight:500;border-radius:8px;border:none;cursor:pointer}
+.btn-row{display:flex;gap:8px;margin-top:4px}
+.btn-row .btn{flex:1}
+.alert{padding:12px 14px;border-radius:10px;font-size:14px;margin-bottom:12px;display:none;line-height:1.5;font-weight:500}
+.alert-ng{background:#FCEBEB;color:#A32D2D;border-left:4px solid #E24B4A}
+.alert-warn{background:#FAEEDA;color:#633806;border-left:4px solid #EF9F27}
+.thresh-note{font-size:12px;margin-top:5px;font-weight:500}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.metric{background:#fff;border-radius:10px;padding:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.metric-val{font-size:26px;font-weight:700}
+.metric-lbl{font-size:12px;color:#888;margin-top:3px}
+.filter-row{display:flex;gap:8px;margin-bottom:12px}
+.filter-row select{flex:1;font-size:14px;padding:8px 10px}
+.rec-item{padding:12px 0;border-bottom:1px solid #f0f0f0}
+.rec-item:last-child{border-bottom:none}
+.rec-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px}
+.rec-name{font-size:15px;font-weight:600}
+.rec-dt{font-size:12px;color:#888;margin-top:2px}
+.rec-detail{font-size:13px;color:#666;line-height:1.6}
+.rec-val{font-weight:700;color:#111}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.b-ok{background:#EAF3DE;color:#3B6D11}
+.b-ng{background:#FCEBEB;color:#A32D2D}
+.b-warn{background:#FAEEDA;color:#633806}
+.staff-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0f0f0}
+.staff-row:last-child{border-bottom:none}
+.avatar{width:38px;height:38px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#185FA5;flex-shrink:0}
+.empty{text-align:center;padding:32px 16px;color:#aaa;font-size:14px}
+.loading{text-align:center;padding:24px;color:#aaa;font-size:14px}
+.del-btn{padding:6px 12px;background:#f5f5f5;border:none;border-radius:8px;color:#e24b4a;font-size:13px;cursor:pointer}
+.section-title{font-size:14px;font-weight:600;color:#444;margin-bottom:10px}
+.no-gas{background:#FAEEDA;border-radius:10px;padding:14px;font-size:14px;color:#633806;margin-bottom:14px;line-height:1.6;display:none}
+.success-msg{font-size:13px;color:#3B6D11;margin-top:8px;display:none;font-weight:500}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>(株)ともなり　アルコールチェック記録</h1>
+  <div class="conn" id="conn-status">接続確認中...</div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('record',this)">記録</button>
+  <button class="tab" onclick="showTab('list',this)">一覧</button>
+  <button class="tab" onclick="showTab('staff',this)">社員管理</button>
+  <button class="tab" onclick="showTab('settings',this)">設定</button>
+</div>
+
+<!-- 記録 -->
+<div id="panel-record" class="panel active">
+  <div id="alert-ng" class="alert alert-ng">⛔ 基準超過！ 乗務・業務を即時停止し、管理者に報告してください。</div>
+  <div id="alert-warn" class="alert alert-warn">⚠️ 要注意。基準値に近い値が検出されています。</div>
+  <div class="card">
+    <div class="field">
+      <label>社員</label>
+      <select id="r-staff"><option value="">（社員を登録してください）</option></select>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>日時</label>
+        <input type="datetime-local" id="r-dt">
+      </div>
+      <div class="field">
+        <label>測定タイミング</label>
+        <select id="r-timing">
+          <option value="乗務前">乗務前</option>
+          <option value="乗務後">乗務後</option>
+          <option value="業務前">業務前</option>
+          <option value="業務後">業務後</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>測定値（mg/L）</label>
+        <input type="number" id="r-val" step="0.001" min="0" max="0.95" placeholder="0.000" oninput="checkVal()">
+        <div class="thresh-note" id="thresh-note"></div>
+      </div>
+      <div class="field">
+        <label>確認者</label>
+        <input type="text" id="r-checker" placeholder="氏名">
+      </div>
+    </div>
+    <div class="field">
+      <label>備考</label>
+      <textarea id="r-note" placeholder="任意"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="clearForm()">クリア</button>
+      <button class="btn btn-primary" id="save-btn" onclick="saveRecord()">記録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 一覧 -->
+<div id="panel-list" class="panel">
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-val" id="m-total">-</div><div class="metric-lbl">総記録数</div></div>
+    <div class="metric"><div class="metric-val" id="m-today">-</div><div class="metric-lbl">本日</div></div>
+    <div class="metric"><div class="metric-val" id="m-ng" style="color:#A32D2D">-</div><div class="metric-lbl">基準超</div></div>
+    <div class="metric"><div class="metric-val" id="m-avg">-</div><div class="metric-lbl">平均値</div></div>
+  </div>
+  <div class="filter-row">
+    <select id="f-staff" onchange="renderList()"><option value="">全社員</option></select>
+    <button class="btn-sm btn-secondary" onclick="loadRecords()" style="background:#f0f0f0;color:#333">更新</button>
+    <button class="btn-sm btn-secondary" onclick="exportCSV()" style="background:#f0f0f0;color:#333">CSV</button>
+  </div>
+  <div class="card" style="padding:0 16px">
+    <div id="list-wrap"><div class="loading">読み込み中...</div></div>
+  </div>
+</div>
+
+<!-- 社員管理 -->
+<div id="panel-staff" class="panel">
+  <div class="card">
+    <div class="section-title">社員を追加</div>
+    <div class="field"><label>氏名</label><input type="text" id="s-name" placeholder="山田 太郎"></div>
+    <div class="row2">
+      <div class="field"><label>社員番号（任意）</label><input type="text" id="s-id" placeholder="001"></div>
+      <div class="field"><label>所属（任意）</label><input type="text" id="s-dept" placeholder="営業部"></div>
+    </div>
+    <button class="btn btn-primary" onclick="addStaff()">追加する</button>
+  </div>
+  <div class="card" style="padding:0 16px">
+    <div id="staff-list-wrap"><div class="loading">読み込み中...</div></div>
+  </div>
+</div>
+
+<!-- 設定 -->
+<div id="panel-settings" class="panel">
+  <div class="card">
+    <div class="section-title">しきい値設定</div>
+    <div class="field">
+      <label>警告しきい値（mg/L）</label>
+      <input type="number" id="cfg-warn" step="0.001" value="0.100">
+    </div>
+    <div class="field">
+      <label>基準超しきい値（mg/L）<span style="font-size:11px;color:#999"> 道路交通法: 0.150</span></label>
+      <input type="number" id="cfg-ng" step="0.001" value="0.150">
+    </div>
+    <button class="btn btn-primary" onclick="saveCfg()">保存</button>
+    <div class="success-msg" id="cfg-ok">✓ 保存しました</div>
+  </div>
+  <div class="card">
+    <div class="section-title">GAS URL 設定</div>
+    <div class="field">
+      <label>ウェブアプリURL</label>
+      <input type="url" id="cfg-url" placeholder="https://script.google.com/macros/s/...">
+    </div>
+    <button class="btn btn-primary" onclick="saveUrl()">URLを保存</button>
+    <div class="success-msg" id="url-ok">✓ 保存しました。ページを再読み込みしてください。</div>
+  </div>
+  <div class="card" style="text-align:center">
+    <div style="font-size:12px;color:#aaa;line-height:1.8">
+      (株)ともなり　アルコールチェック記録アプリ<br>
+      ReFleX Japan USBアルコールチェッカー対応版
+    </div>
+  </div>
+</div>
+
+<script>
+const LS = k => { try { return JSON.parse(localStorage.getItem(k)||'null') } catch { return null } };
+const SS = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+
+const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbxssk3Y8a164h4BQv_xJuLk_F-cKjh5Y4Vws8EbVdivATC6P7AsZ57xzv8BMu8DXH9Okw/exec';
+let GAS_URL = localStorage.getItem('ac_gas_url') || GAS_URL_DEFAULT;
+let cfg = LS('ac3_cfg') || { warn: 0.10, ng: 0.15 };
+let allRecords = [];
+let allStaff   = [];
+
+function initDT() {
+  const n=new Date(), p=x=>String(x).padStart(2,'0');
+  document.getElementById('r-dt').value=`${n.getFullYear()}-${p(n.getMonth()+1)}-${p(n.getDate())}T${p(n.getHours())}:${p(n.getMinutes())}`;
+}
+
+async function api(params) {
+  const url = GAS_URL + '?' + new URLSearchParams(params).toString();
+  const res = await fetch(url);
+  return res.json();
+}
+
+function setStatus(ok) {
+  const el = document.getElementById('conn-status');
+  el.textContent = ok ? '● スプシ連携中' : '● 未接続';
+  el.style.color = ok ? '#90EE90' : '#ffaaaa';
+}
+
+async function loadStaff() {
+  try {
+    const data = await api({ action: 'getStaff' });
+    allStaff = data.staff || [];
+    setStatus(true);
+    renderStaffList();
+    refreshStaffSelects();
+  } catch(e) {
+    setStatus(false);
+    document.getElementById('staff-list-wrap').innerHTML = '<p class="empty">読み込み失敗<br>URLを確認してください</p>';
+  }
+}
+
+async function loadRecords() {
+  document.getElementById('list-wrap').innerHTML = '<div class="loading">読み込み中...</div>';
+  try {
+    const data = await api({ action: 'getRecords' });
+    allRecords = data.records || [];
+    renderList();
+    renderMetrics();
+    setStatus(true);
+  } catch(e) {
+    document.getElementById('list-wrap').innerHTML = '<p class="empty">読み込み失敗<br>URLを確認してください</p>';
+    setStatus(false);
+  }
+}
+
+function renderMetrics() {
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('m-total').textContent = allRecords.length;
+  document.getElementById('m-today').textContent = allRecords.filter(r=>String(r.dt).startsWith(today)).length;
+  document.getElementById('m-ng').textContent    = allRecords.filter(r=>r.result==='NG').length;
+  const avg = allRecords.length ? allRecords.reduce((s,r)=>s+parseFloat(r.val||0),0)/allRecords.length : null;
+  document.getElementById('m-avg').textContent  = avg !== null ? avg.toFixed(3) : '-';
+}
+
+function renderList() {
+  const fs = document.getElementById('f-staff').value;
+  let data = [...allRecords].filter(r=>!fs||r.staff===fs)
+    .sort((a,b)=>String(b.dt).localeCompare(String(a.dt)));
+  const wrap = document.getElementById('list-wrap');
+  if (!data.length) { wrap.innerHTML='<p class="empty">記録がありません</p>'; return; }
+  wrap.innerHTML = data.map(r => {
+    const badge = r.result==='OK'
+      ? '<span class="badge b-ok">OK</span>'
+      : r.result==='WARN'
+      ? '<span class="badge b-warn">注意</span>'
+      : '<span class="badge b-ng">基準超</span>';
+    const dt = String(r.dt).replace('T',' ').slice(0,16);
+    return `<div class="rec-item">
+      <div class="rec-head">
+        <div>
+          <div class="rec-name">${r.staff}</div>
+          <div class="rec-dt">${dt}　${r.timing||''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${badge}
+          <button class="del-btn" onclick="deleteRecord('${r.id}')">削除</button>
+        </div>
+      </div>
+      <div class="rec-detail">
+        測定値 <span class="rec-val">${parseFloat(r.val).toFixed(3)} mg/L</span>
+        ${r.checker ? '　確認: '+r.checker : ''}
+        ${r.note ? '<br>'+r.note : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function refreshStaffSelects() {
+  const opts = allStaff.map(s=>`<option value="${s.name}">${s.name}${s.id?' ('+s.id+')':''}</option>`).join('');
+  document.getElementById('r-staff').innerHTML = '<option value="">（社員を登録してください）</option>' + opts;
+  document.getElementById('f-staff').innerHTML = '<option value="">全社員</option>' + allStaff.map(s=>`<option value="${s.name}">${s.name}</option>`).join('');
+}
+
+function renderStaffList() {
+  const wrap = document.getElementById('staff-list-wrap');
+  if (!allStaff.length) { wrap.innerHTML='<p class="empty">社員が登録されていません</p>'; return; }
+  wrap.innerHTML = allStaff.map(s=>`
+    <div class="staff-row">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="avatar">${s.name.slice(0,2)}</div>
+        <div>
+          <div style="font-size:15px;font-weight:600">${s.name}</div>
+          <div style="font-size:12px;color:#888">${s.id?'No.'+s.id+'　':''}${s.dept||''}</div>
+        </div>
+      </div>
+      <button class="del-btn" onclick="deleteStaff('${s.name}')">削除</button>
+    </div>`).join('');
+}
+
+function getResult(v) {
+  if (v >= cfg.ng)   return 'NG';
+  if (v >= cfg.warn) return 'WARN';
+  return 'OK';
+}
+
+function checkVal() {
+  const v = parseFloat(document.getElementById('r-val').value);
+  document.getElementById('alert-ng').style.display   = 'none';
+  document.getElementById('alert-warn').style.display = 'none';
+  const tn = document.getElementById('thresh-note');
+  tn.textContent = '';
+  if (isNaN(v)) return;
+  if (v >= cfg.ng) {
+    document.getElementById('alert-ng').style.display = 'block';
+    tn.textContent = `基準超 (${cfg.ng.toFixed(3)} mg/L 以上)`;
+    tn.style.color = '#A32D2D';
+  } else if (v >= cfg.warn) {
+    document.getElementById('alert-warn').style.display = 'block';
+    tn.textContent = `要注意 (${cfg.warn.toFixed(3)} mg/L 以上)`;
+    tn.style.color = '#633806';
+  } else {
+    tn.textContent = `OK (${cfg.warn.toFixed(3)} mg/L 未満)`;
+    tn.style.color = '#3B6D11';
+  }
+}
+
+async function saveRecord() {
+  const staff = document.getElementById('r-staff').value;
+  const dt    = document.getElementById('r-dt').value;
+  const val   = document.getElementById('r-val').value;
+  if (!staff || !dt || val==='') { alert('社員・日時・測定値は必須です'); return; }
+  const v = parseFloat(val);
+  if (isNaN(v)||v<0||v>0.95) { alert('測定値は 0.000〜0.950 の範囲で入力してください'); return; }
+  const btn = document.getElementById('save-btn');
+  btn.textContent = '保存中...'; btn.disabled = true;
+  try {
+    await api({
+      action:'addRecord', staff, dt, val:v,
+      timing:  document.getElementById('r-timing').value,
+      checker: document.getElementById('r-checker').value,
+      note:    document.getElementById('r-note').value,
+      result:  getResult(v),
+      device:'', method:''
+    });
+    clearForm();
+    alert('記録しました！');
+  } catch(e) {
+    alert('保存に失敗しました。\nURLを設定タブで確認してください。');
+  } finally {
+    btn.textContent = '記録する';
+    btn.disabled = false;
+  }
+}
+
+function clearForm() {
+  ['r-val','r-checker','r-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('r-timing').selectedIndex=0;
+  document.getElementById('alert-ng').style.display='none';
+  document.getElementById('alert-warn').style.display='none';
+  document.getElementById('thresh-note').textContent='';
+  initDT();
+}
+
+async function deleteRecord(id) {
+  if (!confirm('この記録を削除しますか？')) return;
+  try { await api({ action:'delRecord', id }); await loadRecords(); }
+  catch(e) { alert('削除に失敗しました'); }
+}
+
+async function addStaff() {
+  const name = document.getElementById('s-name').value.trim();
+  if (!name) { alert('氏名を入力してください'); return; }
+  if (allStaff.find(s=>s.name===name)) { alert('すでに登録されています'); return; }
+  try {
+    await api({ action:'addStaff', name,
+      sid:  document.getElementById('s-id').value.trim(),
+      dept: document.getElementById('s-dept').value.trim() });
+    document.getElementById('s-name').value='';
+    document.getElementById('s-id').value='';
+    document.getElementById('s-dept').value='';
+    await loadStaff();
+  } catch(e) { alert('追加に失敗しました'); }
+}
+
+async function deleteStaff(name) {
+  if (!confirm(`「${name}」を削除しますか？`)) return;
+  try { await api({ action:'delStaff', name }); await loadStaff(); }
+  catch(e) { alert('削除に失敗しました'); }
+}
+
+function exportCSV() {
+  if (!allRecords.length) { alert('記録がありません'); return; }
+  const rows = [
+    ['日時','社員','測定値(mg/L)','結果','タイミング','確認者','備考'],
+    ...allRecords.map(r=>[r.dt,r.staff,r.val,r.result,r.timing,r.checker||'',r.note||''])
+  ];
+  const csv='\uFEFF'+rows.map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='alcohol_check_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+function saveCfg() {
+  const w=parseFloat(document.getElementById('cfg-warn').value);
+  const n=parseFloat(document.getElementById('cfg-ng').value);
+  if(isNaN(w)||isNaN(n)||w>=n){alert('基準超は警告より大きい値にしてください');return;}
+  cfg={warn:w,ng:n}; SS('ac3_cfg',cfg);
+  const ok=document.getElementById('cfg-ok');
+  ok.style.display='block'; setTimeout(()=>ok.style.display='none',2000);
+}
+
+function saveUrl() {
+  const url = document.getElementById('cfg-url').value.trim();
+  if (!url.startsWith('https://script.google.com')) {
+    alert('GASのURLを正しく入力してください。\nhttps://script.google.com/... から始まります。');
+    return;
+  }
+  localStorage.setItem('ac_gas_url', url);
+  GAS_URL = url;
+  document.getElementById('url-ok').style.display='block';
+  setTimeout(()=>location.reload(),1500);
+}
+
+function showTab(t, btn) {
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-'+t).classList.add('active');
+  if(t==='list')  loadRecords();
+  if(t==='staff') loadStaff();
+  if(t==='settings') {
+    document.getElementById('cfg-warn').value=cfg.warn.toFixed(3);
+    document.getElementById('cfg-ng').value=cfg.ng.toFixed(3);
+    document.getElementById('cfg-url').value=GAS_URL||'';
+  }
+}
+
+initDT();
+loadStaff();
+</script>
+</body>
+</html>
